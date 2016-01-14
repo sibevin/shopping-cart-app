@@ -4,7 +4,7 @@ RSpec.describe CreditCardService, type: :model do
   describe "#pay" do
     let(:price) { Faker::Number.number(5).to_i }
 
-    it "should return 0 error_code if the given order_number's last digit < 4" do
+    it "should return 0 error_code if the given order_number's last digit <= 3" do
       order_number = Faker::Number.number(10) + "#{Faker::Number.between(0, 3)}"
       expect(CreditCardService.pay(order_number: order_number, total_pay: price)[:error_code]).to eql(0)
     end
