@@ -18,6 +18,14 @@ class Order < ActiveRecord::Base
     end
   end
 
+  def expire
+    if self.state == 'paying' && self.expired_at.present? && self.expired_at <= Time.now
+      self.failure_reason = 'expired'
+      self.failed_at = Time.now
+      self.state = 'failed'
+    end
+  end
+
   private
 
   def gen_order_number

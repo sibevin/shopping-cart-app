@@ -57,7 +57,7 @@ RSpec.describe Order, type: :model do
       end
     end
 
-    it "should do nothing if the order state is not 'shopping'" do
+    it "should do nothing if the order state is not 'paying'" do
       ['shopping', 'cancelled', 'paid', 'failed'].each do |st|
         order = build(:order, state: st)
         order.pay
@@ -66,4 +66,43 @@ RSpec.describe Order, type: :model do
       end
     end
   end
+
+  describe ".expire" do
+    let(:order) { build(:order, state: 'paying', expired_at: 1.hour.ago) }
+
+    it "should change state to 'failed' if the order is expired" do
+      order.expire
+      expect(order.state).to eq('failed')
+    end
+
+    it "should record the failed_at" do
+      time_now = Time.now
+      travel_to(time_now) do
+        order.expire
+        expect(order.failed_at.to_s(:db)).to eq(time_now.to_s(:db))
+      end
+    end
+
+    it "should record the failure reason with 'expired'" do
+      order.expire
+      expect(order.failure_reason).to eq('expired')
+    end
+
+    it "should do nothing if the order state is not 'paying'" do
+      ['shopping', 'cancelled', 'paid', 'failed'].each do |st|
+        order = build(:order, state: st, expired_at: 1.hour.ago)
+        order.expire
+        expect(order.state).to eq(st)
+        expect(order.failed_at).to be_blank
+      end
+    end
+
+    it "should do nothing if the order is not expired" do
+      order = build(:order, state: 'paying', expired_at: 1.hour.since)
+      order.expire
+      expect(order.state).to eq('paying')
+      expect(order.failed_at).to be_blank
+    end
+  end
+
 end
