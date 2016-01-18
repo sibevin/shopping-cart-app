@@ -1,8 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Order, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
-  describe "when initalize" do
+  describe "when initalization" do
     it "should have a 'shopping' state" do
       order = build(:order)
       expect(order.state).to eq('shopping')
