@@ -6,6 +6,7 @@ class Order < ActiveRecord::Base
   uidable uid_name: :order_number
 
   belongs_to :user
+  has_many :order_items
 
   def cancel
     if self.state == 'shopping'
@@ -34,12 +35,33 @@ class Order < ActiveRecord::Base
       self.payment_method = payment_method
       self.paying_at = Time.now
       self.state = 'paying'
+      calculate_total_price
+      update_order_items
     end
   end
 
   private
 
+  def calculate_total_price
+    total = 0
+    self.order_items.each do |oi|
+      total = total + oi.unit_price * oi.count
+    end
+    self.total_price = total
+  end
+
+  def update_order_items
+    self.order_items.each do |oi|
+      oi.update_attributes(
+        unit_price: oi.product.unit_price,
+        name: oi.product.name,
+        description: oi.product.description,
+      )
+    end
+  end
+
   def gen_order_number
+    self.created_at = Time.now if self.created_at.blank?
     "#{self.created_at.strftime('%Y%m%d')}#{RandomToken.gen(6, s: :n)}"
   end
 end

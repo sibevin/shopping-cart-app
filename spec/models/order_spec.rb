@@ -135,7 +135,28 @@ RSpec.describe Order, type: :model do
         expect(order.paying_at).to be_blank
       end
     end
-  end
 
+    describe "handle order items" do
+      before(:example) do
+        @product = create(:product)
+        @order = create(:order, state: 'shopping')
+        @order_item1 = create(:order_item, order: @order, product: @product, count: rand(10) + 1)
+        @order_item2 = create(:order_item, order: @order, product: @product, count: rand(10) + 1)
+      end
+
+      it "should calculate the total_price" do
+        @order.start_paying(payment_method: payment_method)
+        expect(@order.total_price).to eq(@order_item1.unit_price * @order_item1.count + @order_item2.unit_price * @order_item2.count)
+      end
+
+      it "should update the order item's unit_price, name and description" do
+        @order.start_paying(payment_method: payment_method)
+        expect(@order.order_items.first.name).to eq(@product.name)
+        expect(@order.order_items.first.unit_price).to eq(@product.unit_price)
+        expect(@order.order_items.first.description).to eq(@product.description)
+      end
+    end
+
+  end
 
 end
