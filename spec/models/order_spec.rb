@@ -165,7 +165,7 @@ RSpec.describe Order, type: :model do
       expect(order.total_point).to eq(total_point)
     end
 
-    describe "handle payment method" do
+    describe "record payment method" do
       let(:order) { create(:order, state: 'shopping') }
 
       it "should record the given payment method if total_pay is not 0" do
@@ -185,6 +185,51 @@ RSpec.describe Order, type: :model do
       end
     end
 
+    describe "handle payment method" do
+      let(:time_now) { Time.now }
+
+      before(:example) do
+        @product = create(:product, unit_price: Faker::Number.number(3).to_i + 1)
+        @order = create(:order, state: 'shopping')
+        order_item1 = create(:order_item, order: @order, product: @product)
+        order_item2 = create(:order_item, order: @order, product: @product)
+        @total_price = @product.unit_price * order_item1.count + @product.unit_price * order_item2.count
+      end
+
+      describe "'free' payment method" do
+        it "should set expired_at with nil" do
+          @order.start_paying(payment_method: 'free')
+          expect(@order.expired_at).to be_blank
+        end
+      end
+
+      describe "'credit_card' payment method" do
+        it "should set expired_at with 2 hours" do
+          travel_to(time_now) do
+            @order.start_paying(payment_method: 'credit_card')
+            expect(@order.expired_at.to_s(:db)).to eq(2.hours.since.to_s(:db))
+          end
+        end
+      end
+
+      describe "'pay_pig' payment method" do
+        it "should set expired_at with 1 day" do
+          travel_to(time_now) do
+            @order.start_paying(payment_method: 'pay_pig')
+            expect(@order.expired_at.to_s(:db)).to eq(1.day.since.to_s(:db))
+          end
+        end
+      end
+
+      describe "'atm' payment method" do
+        it "should set expired_at with 7 days" do
+          travel_to(time_now) do
+            @order.start_paying(payment_method: 'atm')
+            expect(@order.expired_at.to_s(:db)).to eq(7.days.since.to_s(:db))
+          end
+        end
+      end
+    end
 
   end
 

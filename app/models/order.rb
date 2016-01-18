@@ -32,16 +32,14 @@ class Order < ActiveRecord::Base
 
   def start_paying(payment_method:, total_point: 0)
     if self.state == 'shopping'
-      self.payment_method = payment_method
       self.paying_at = Time.now
       self.state = 'paying'
       self.total_point = total_point
       update_order_items
       calculate_total_price
       self.total_pay = self.total_price - self.total_point
-      if self.total_pay <= 0
-        self.payment_method = 'free'
-      end
+      handle_payment_method(payment_method)
+      setup_expiration
     end
   end
 
@@ -62,6 +60,23 @@ class Order < ActiveRecord::Base
         name: oi.product.name,
         description: oi.product.description,
       )
+    end
+  end
+
+  def handle_payment_method(given_payment_method)
+    self.payment_method = given_payment_method
+    if self.total_pay <= 0
+      self.payment_method = 'free'
+    end
+  end
+
+  def setup_expiration
+    self.expired_at = case self.payment_method
+    when 'credit_card' then 2.hours.since
+    when 'pay_pig' then 1.day.since
+    when 'atm' then 7.days.since
+    else
+      nil
     end
   end
 
