@@ -57,4 +57,7 @@ RSpec.configure do |config|
 
   # Setup FactoryGirl
   config.include FactoryGirl::Syntax::Methods
+
+  # Setup time helper
+  config.include ActiveSupport::Testing::TimeHelpers
 end
