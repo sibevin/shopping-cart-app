@@ -11,6 +11,13 @@ class Order < ActiveRecord::Base
     end
   end
 
+  def pay
+    if self.state == 'paying'
+      self.paid_at = Time.now
+      self.state = 'paid'
+    end
+  end
+
   private
 
   def gen_order_number
