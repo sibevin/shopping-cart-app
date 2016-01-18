@@ -39,6 +39,9 @@ class Order < ActiveRecord::Base
       update_order_items
       calculate_total_price
       self.total_pay = self.total_price - self.total_point
+      if self.total_pay <= 0
+        self.payment_method = 'free'
+      end
     end
   end
 

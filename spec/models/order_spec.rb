@@ -122,11 +122,6 @@ RSpec.describe Order, type: :model do
       end
     end
 
-    it "should record the given payment method" do
-      order.start_paying(payment_method: payment_method)
-      expect(order.payment_method).to eq(payment_method)
-    end
-
     it "should do nothing if the order state is not 'shopping'" do
       (Order::STATES - ['shopping']).each do |st|
         order = build(:order, state: st)
@@ -140,9 +135,9 @@ RSpec.describe Order, type: :model do
       before(:example) do
         @product = create(:product)
         @order = create(:order, state: 'shopping')
-        @order_item1 = create(:order_item, order: @order, product: @product)
-        @order_item2 = create(:order_item, order: @order, product: @product)
-        @total_price = @product.unit_price * @order_item1.count + @product.unit_price * @order_item2.count
+        order_item1 = create(:order_item, order: @order, product: @product)
+        order_item2 = create(:order_item, order: @order, product: @product)
+        @total_price = @product.unit_price * order_item1.count + @product.unit_price * order_item2.count
       end
 
       it "should calculate the total_price" do
@@ -169,6 +164,27 @@ RSpec.describe Order, type: :model do
       order.start_paying(payment_method: payment_method, total_point: total_point)
       expect(order.total_point).to eq(total_point)
     end
+
+    describe "handle payment method" do
+      let(:order) { create(:order, state: 'shopping') }
+
+      it "should record the given payment method if total_pay is not 0" do
+        product = create(:product, unit_price: Faker::Number.number(3).to_i + 1)
+        create(:order_item, order: order, product: product)
+        payment_method = (Order::PAYMENT_METHODS - ['free']).sample
+        order.start_paying(payment_method: payment_method)
+        expect(order.payment_method).to eq(payment_method)
+      end
+
+      it "should change the payment method to 'free' if total_pay is 0" do
+        product = create(:product, unit_price: 0)
+        create(:order_item, order: order, product: product)
+        payment_method = (Order::PAYMENT_METHODS - ['free']).sample
+        order.start_paying(payment_method: payment_method)
+        expect(order.payment_method).to eq('free')
+      end
+    end
+
 
   end
 
