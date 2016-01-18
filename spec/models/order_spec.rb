@@ -140,13 +140,14 @@ RSpec.describe Order, type: :model do
       before(:example) do
         @product = create(:product)
         @order = create(:order, state: 'shopping')
-        @order_item1 = create(:order_item, order: @order, product: @product, count: rand(10) + 1)
-        @order_item2 = create(:order_item, order: @order, product: @product, count: rand(10) + 1)
+        @order_item1 = create(:order_item, order: @order, product: @product)
+        @order_item2 = create(:order_item, order: @order, product: @product)
+        @total_price = @product.unit_price * @order_item1.count + @product.unit_price * @order_item2.count
       end
 
       it "should calculate the total_price" do
         @order.start_paying(payment_method: payment_method)
-        expect(@order.total_price).to eq(@order_item1.unit_price * @order_item1.count + @order_item2.unit_price * @order_item2.count)
+        expect(@order.total_price).to eq(@total_price)
       end
 
       it "should update the order item's unit_price, name and description" do
@@ -155,6 +156,18 @@ RSpec.describe Order, type: :model do
         expect(@order.order_items.first.unit_price).to eq(@product.unit_price)
         expect(@order.order_items.first.description).to eq(@product.description)
       end
+
+      it "should calculate total pay" do
+        total_point = Faker::Number.number(3).to_i
+        @order.start_paying(payment_method: payment_method, total_point: total_point)
+        expect(@order.total_pay).to eq(@total_price - total_point)
+      end
+    end
+
+    it "should record the total_point" do
+      total_point = Faker::Number.number(3).to_i
+      order.start_paying(payment_method: payment_method, total_point: total_point)
+      expect(order.total_point).to eq(total_point)
     end
 
   end

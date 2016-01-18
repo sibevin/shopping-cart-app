@@ -30,13 +30,15 @@ class Order < ActiveRecord::Base
     end
   end
 
-  def start_paying(payment_method:)
+  def start_paying(payment_method:, total_point: 0)
     if self.state == 'shopping'
       self.payment_method = payment_method
       self.paying_at = Time.now
       self.state = 'paying'
-      calculate_total_price
+      self.total_point = total_point
       update_order_items
+      calculate_total_price
+      self.total_pay = self.total_price - self.total_point
     end
   end
 
