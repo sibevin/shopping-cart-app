@@ -4,6 +4,11 @@ class Order < ActiveRecord::Base
 
   belongs_to :user
 
+  def cancel
+    self.cancelled_at = Time.now
+    self.state = 'cancelled'
+  end
+
   private
 
   def gen_order_number
