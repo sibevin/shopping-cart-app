@@ -27,7 +27,8 @@ ActiveRecord::Schema.define(version: 20160118024536) do
 
   create_table "orders", force: :cascade do |t|
     t.integer  "user_id"
-    t.string   "order_number",   limit: 20,                          default: "shopping", null: false
+    t.string   "order_number",                                                            null: false
+    t.string   "state",          limit: 20,                          default: "shopping", null: false
     t.string   "payment_method", limit: 20
     t.string   "failure_reason"
     t.decimal  "total_price",               precision: 15, scale: 5
