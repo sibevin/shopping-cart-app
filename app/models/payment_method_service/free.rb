@@ -5,7 +5,7 @@ module PaymentMethodService
     end
 
     def run_paying
-      raise "You should implement 'run_paying' in your PaymentMethodService-based class"
+      { redirect: :succ }
     end
   end
 end

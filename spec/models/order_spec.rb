@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Order, type: :model do
+  let(:time_now) { Time.now.utc }
+
   describe "when initalization" do
     it "should have a 'shopping' state" do
       order = build(:order)
@@ -8,10 +10,10 @@ RSpec.describe Order, type: :model do
     end
 
     it "should have a order_number" do
-      time_now = Time.now
-      travel_to(time_now)
-      order = create(:order, created_at: time_now)
-      expect(order.order_number).to match(/#{time_now.strftime('%Y%m%d')}\d{6}/)
+      travel_to(time_now) do
+        order = create(:order, created_at: time_now)
+        expect(order.order_number).to match(/#{time_now.strftime('%Y%m%d')}\d{6}/)
+      end
     end
   end
 
@@ -24,7 +26,6 @@ RSpec.describe Order, type: :model do
     end
 
     it "should record the cancelled_at" do
-      time_now = Time.now
       travel_to(time_now) do
         order.cancel
         expect(order.cancelled_at.to_s(:db)).to eq(time_now.to_s(:db))
@@ -50,7 +51,6 @@ RSpec.describe Order, type: :model do
     end
 
     it "should record the paid_at" do
-      time_now = Time.now
       travel_to(time_now) do
         order.pay
         expect(order.paid_at.to_s(:db)).to eq(time_now.to_s(:db))
@@ -76,7 +76,6 @@ RSpec.describe Order, type: :model do
     end
 
     it "should record the failed_at" do
-      time_now = Time.now
       travel_to(time_now) do
         order.expire
         expect(order.failed_at.to_s(:db)).to eq(time_now.to_s(:db))
@@ -115,7 +114,6 @@ RSpec.describe Order, type: :model do
     end
 
     it "should record the paying_at" do
-      time_now = Time.now
       travel_to(time_now) do
         order.start_paying(payment_method: payment_method)
         expect(order.paying_at.to_s(:db)).to eq(time_now.to_s(:db))
@@ -186,7 +184,6 @@ RSpec.describe Order, type: :model do
     end
 
     describe "handle payment method" do
-      let(:time_now) { Time.now }
 
       before(:example) do
         @product = create(:product, unit_price: Faker::Number.number(3).to_i + 1)
