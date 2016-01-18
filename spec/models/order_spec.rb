@@ -29,5 +29,14 @@ RSpec.describe Order, type: :model do
       order.cancel
       expect(order.cancelled_at.to_s(:db)).to eq(time_now.to_s(:db))
     end
+
+    it "should do nothing if the order state is not 'shopping'" do
+      ['cancelled', 'paying', 'paid', 'failed'].each do |st|
+        order = build(:order, state: st)
+        order.cancel
+        expect(order.state).to eq(st)
+        expect(order.cancelled_at).to be_blank
+      end
+    end
   end
 end
