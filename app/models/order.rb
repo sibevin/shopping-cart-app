@@ -1,4 +1,7 @@
 class Order < ActiveRecord::Base
+  STATES = ['shopping', 'cancelled', 'paying', 'paid', 'failed']
+  PAYMENT_METHODS = ['free', 'credit_card', 'pay_pig', 'atm']
+
   include Uidable
   uidable uid_name: :order_number
 
@@ -23,6 +26,14 @@ class Order < ActiveRecord::Base
       self.failure_reason = 'expired'
       self.failed_at = Time.now
       self.state = 'failed'
+    end
+  end
+
+  def start_paying(payment_method:)
+    if self.state == 'shopping'
+      self.payment_method = payment_method
+      self.paying_at = Time.now
+      self.state = 'paying'
     end
   end
 

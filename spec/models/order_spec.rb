@@ -32,7 +32,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'shopping'" do
-      ['cancelled', 'paying', 'paid', 'failed'].each do |st|
+      (Order::STATES - ['shopping']).each do |st|
         order = build(:order, state: st)
         order.cancel
         expect(order.state).to eq(st)
@@ -58,7 +58,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'paying'" do
-      ['shopping', 'cancelled', 'paid', 'failed'].each do |st|
+      (Order::STATES - ['paying']).each do |st|
         order = build(:order, state: st)
         order.pay
         expect(order.state).to eq(st)
@@ -89,7 +89,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'paying'" do
-      ['shopping', 'cancelled', 'paid', 'failed'].each do |st|
+      (Order::STATES - ['paying']).each do |st|
         order = build(:order, state: st, expired_at: 1.hour.ago)
         order.expire
         expect(order.state).to eq(st)
@@ -104,5 +104,38 @@ RSpec.describe Order, type: :model do
       expect(order.failed_at).to be_blank
     end
   end
+
+  describe ".start_paying" do
+    let(:order) { build(:order, state: 'shopping') }
+    let(:payment_method) { Order::PAYMENT_METHODS.sample }
+
+    it "should change state to 'paying'" do
+      order.start_paying(payment_method: payment_method)
+      expect(order.state).to eq('paying')
+    end
+
+    it "should record the paying_at" do
+      time_now = Time.now
+      travel_to(time_now) do
+        order.start_paying(payment_method: payment_method)
+        expect(order.paying_at.to_s(:db)).to eq(time_now.to_s(:db))
+      end
+    end
+
+    it "should record the given payment method" do
+      order.start_paying(payment_method: payment_method)
+      expect(order.payment_method).to eq(payment_method)
+    end
+
+    it "should do nothing if the order state is not 'shopping'" do
+      (Order::STATES - ['shopping']).each do |st|
+        order = build(:order, state: st)
+        order.start_paying(payment_method: payment_method)
+        expect(order.state).to eq(st)
+        expect(order.paying_at).to be_blank
+      end
+    end
+  end
+
 
 end
