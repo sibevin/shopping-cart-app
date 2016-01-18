@@ -71,13 +71,8 @@ class Order < ActiveRecord::Base
   end
 
   def setup_expiration
-    self.expired_at = case self.payment_method
-    when 'credit_card' then 2.hours.since
-    when 'pay_pig' then 1.day.since
-    when 'atm' then 7.days.since
-    else
-      nil
-    end
+    pms = PaymentMethodService.gen(self.payment_method)
+    self.expired_at = pms.get_expiration
   end
 
   def gen_order_number
