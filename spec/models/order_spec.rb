@@ -14,4 +14,20 @@ RSpec.describe Order, type: :model do
       expect(order.order_number).to match(/#{time_now.strftime('%Y%m%d')}\d{6}/)
     end
   end
+
+  describe ".cancel" do
+    let(:order) { build(:order, state: 'shopping') }
+
+    it "should change state to 'cancelled'" do
+      order.cancel
+      expect(order.state).to eq('cancelled')
+    end
+
+    it "should record the cancelled_at" do
+      time_now = Time.now
+      travel_to(time_now)
+      order.cancel
+      expect(order.cancelled_at.to_s(:db)).to eq(time_now.to_s(:db))
+    end
+  end
 end
