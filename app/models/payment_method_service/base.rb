@@ -4,7 +4,7 @@ module PaymentMethodService
       raise "You should implement 'get_expiration' in your PaymentMethodService-based class"
     end
 
-    def run_paying
+    def run_paying(order_number, total_pay)
       raise "You should implement 'run_paying' in your PaymentMethodService-based class"
     end
   end

@@ -12,6 +12,25 @@ RSpec.describe PaymentMethodService::CreditCard, type: :model do
     end
   end
 
-  xdescribe "#run_paying" do
+  describe "#run_paying" do
+    let(:order_number) { "20160101#{RandomToken.gen(6, s: :n)}" }
+    let(:total_pay) { Faker::Number.number(3).to_i }
+
+    it "redirect to success page if CreditCardService.pay error code == 0" do
+      allow(CreditCardService).to receive(:pay) { { error_code: 0 } }
+      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:credit_card_succ)
+    end
+
+    it "redirect to error page if CreditCardService.pay error code == 1" do
+      allow(CreditCardService).to receive(:pay) { { error_code: 1 } }
+      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:credit_card_pending)
+    end
+
+    it "redirect to error page if PayPigService.pay error code > 1" do
+      error_msg = Faker::Lorem.sentence(3)
+      allow(CreditCardService).to receive(:pay) { { error_code: rand(8) + 2, msg: error_msg } }
+      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:credit_card_failed)
+      expect(pms.run_paying(order_number, total_pay)[:msg]).to eq(error_msg)
+    end
   end
 end

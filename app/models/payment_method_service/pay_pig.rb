@@ -1,11 +1,16 @@
 module PaymentMethodService
-  class PayPig
+  class PayPig < Base
     def get_expiration
       1.day.since
     end
 
-    def run_paying
-      raise "You should implement 'run_paying' in your PaymentMethodService-based class"
+    def run_paying(order_number, total_pay)
+      service_result = PayPigService.pay(order_number: order_number, total_pay: total_pay)
+      return case service_result[:error_code]
+      when 0 then { redirect: :pay_pig_succ }
+      else
+        { redirect: :pay_pig_failed, msg: service_result[:msg] }
+      end
     end
   end
 end

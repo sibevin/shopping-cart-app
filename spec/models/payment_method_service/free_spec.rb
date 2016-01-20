@@ -9,6 +9,12 @@ RSpec.describe PaymentMethodService::Free, type: :model do
     end
   end
 
-  xdescribe "#run_paying" do
+  describe "#run_paying" do
+    let(:order_number) { "20160101#{RandomToken.gen(6, s: :n)}" }
+    let(:total_pay) { Faker::Number.number(3).to_i }
+
+    it "redirect to success page" do
+      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:free_succ)
+    end
   end
 end
