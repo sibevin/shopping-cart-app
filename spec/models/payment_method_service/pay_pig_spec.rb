@@ -19,6 +19,7 @@ RSpec.describe PaymentMethodService::PayPig, type: :model do
     it "redirect to success page if PayPigService.pay error code == 0" do
       allow(PayPigService).to receive(:pay) { { error_code: 0 } }
       expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:pay_pig_succ)
+      expect(pms.run_paying(order_number, total_pay)[:status]).to eq(:succ)
     end
 
     it "redirect to error page if PayPigService.pay error code is not 0" do
@@ -26,6 +27,7 @@ RSpec.describe PaymentMethodService::PayPig, type: :model do
       allow(PayPigService).to receive(:pay) { { error_code: rand(9) + 1, msg: error_msg } }
       expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:pay_pig_failed)
       expect(pms.run_paying(order_number, total_pay)[:msg]).to eq(error_msg)
+      expect(pms.run_paying(order_number, total_pay)[:status]).to eq(:failed)
     end
   end
 end

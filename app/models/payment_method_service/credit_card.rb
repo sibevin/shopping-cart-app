@@ -7,10 +7,10 @@ module PaymentMethodService
     def run_paying(order_number, total_pay)
       service_result = CreditCardService.pay(order_number: order_number, total_pay: total_pay)
       return case service_result[:error_code]
-      when 0 then { redirect: :credit_card_succ }
-      when 1 then { redirect: :credit_card_pending }
+      when 0 then { redirect: :credit_card_succ, status: :succ }
+      when 1 then { redirect: :credit_card_pending, status: :pending }
       else
-        { redirect: :credit_card_failed, msg: service_result[:msg] }
+        { redirect: :credit_card_failed, msg: service_result[:msg], status: :failed }
       end
     end
   end

@@ -5,7 +5,7 @@ module PaymentMethodService
     end
 
     def run_paying(order_number, total_pay)
-      { redirect: :free_succ }
+      { redirect: :free_succ, status: :succ }
     end
   end
 end

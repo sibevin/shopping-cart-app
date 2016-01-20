@@ -7,9 +7,9 @@ module PaymentMethodService
     def run_paying(order_number, total_pay)
       service_result = PayPigService.pay(order_number: order_number, total_pay: total_pay)
       return case service_result[:error_code]
-      when 0 then { redirect: :pay_pig_succ }
+      when 0 then { redirect: :pay_pig_succ, status: :succ }
       else
-        { redirect: :pay_pig_failed, msg: service_result[:msg] }
+        { redirect: :pay_pig_failed, msg: service_result[:msg], status: :failed }
       end
     end
   end
