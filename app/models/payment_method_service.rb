@@ -9,4 +9,9 @@ module PaymentMethodService
       raise "Invalid payment method '#{method}'"
     end
   end
+
+  def self.run_paying(method, order_number, total_pay)
+    pms = PaymentMethodService.gen(method)
+    pms.run_paying(order_number, total_pay)
+  end
 end
