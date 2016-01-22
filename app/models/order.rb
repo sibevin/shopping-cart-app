@@ -9,7 +9,7 @@ class Order < ActiveRecord::Base
   has_many :order_items
 
   def cancel
-    if self.state == 'shopping'
+    if is_in_shopping?
       self.cancelled_at = Time.now
       self.state = 'cancelled'
     end
@@ -31,7 +31,7 @@ class Order < ActiveRecord::Base
   end
 
   def start_paying(payment_method:, total_point: 0)
-    if self.state == 'shopping'
+    if is_in_shopping?
       self.paying_at = Time.now
       self.state = 'paying'
       self.total_point = total_point
@@ -44,7 +44,7 @@ class Order < ActiveRecord::Base
   end
 
   def add_item(product:, count: 1)
-    if self.state == 'shopping'
+    if is_in_shopping?
       if oi = self.order_items.where(product: product).take
         oi.update_attributes(count: oi.count + count)
       else
@@ -54,7 +54,7 @@ class Order < ActiveRecord::Base
   end
 
   def change_item(order_item:, count:)
-    if self.state == 'shopping'
+    if is_in_shopping?
       if oi = self.order_items.where(id: order_item.id).take
         if count < 1
           oi.destroy
@@ -66,7 +66,7 @@ class Order < ActiveRecord::Base
   end
 
   def delete_item(order_item:)
-    if self.state == 'shopping'
+    if is_in_shopping?
       if oi = self.order_items.where(id: order_item.id).take
         oi.destroy
       end
@@ -74,6 +74,10 @@ class Order < ActiveRecord::Base
   end
 
   private
+
+  def is_in_shopping?
+    (self.state == 'shopping')
+  end
 
   def calculate_total_price
     total = 0
