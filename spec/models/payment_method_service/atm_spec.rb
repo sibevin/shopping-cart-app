@@ -13,7 +13,7 @@ RSpec.describe PaymentMethodService::Atm, type: :model do
   end
 
   describe "#run_paying" do
-    let(:order_number) { "20160101#{RandomToken.gen(6, s: :n)}" }
+    let(:order_number) { RandomToken.gen(14, s: :n) }
     let(:total_pay) { Faker::Number.number(3).to_i }
 
     it "redirect to success page if AtmService.pay error code == 0" do
