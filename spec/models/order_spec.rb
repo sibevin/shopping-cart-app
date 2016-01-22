@@ -108,11 +108,6 @@ RSpec.describe Order, type: :model do
     let(:order) { build(:order, state: 'shopping') }
     let(:payment_method) { Order::PAYMENT_METHODS.sample }
 
-    it "should change state to 'paying'" do
-      order.start_paying(payment_method: payment_method)
-      expect(order.state).to eq('paying')
-    end
-
     it "should record the paying_at" do
       travel_to(time_now) do
         order.start_paying(payment_method: payment_method)
@@ -207,6 +202,37 @@ RSpec.describe Order, type: :model do
             expect(@order.expired_at.to_s(:db)).to eq(2.hours.since.to_s(:db))
           end
         end
+
+        it "should change state to 'paid' and record paid_at if payment is done" do
+          travel_to(time_now) do
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :succ, redirect: :credit_card_succ } }
+            result = @order.start_paying(payment_method: 'credit_card')
+            expect(@order.state).to eq('paid')
+            expect(@order.paid_at.to_s(:db)).to eq(time_now.to_s(:db))
+            expect(result[:redirect]).to eq(:credit_card_succ)
+          end
+        end
+
+        it "should keep state with 'paying' if payment is pending" do
+          travel_to(time_now) do
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :pending, redirect: :credit_card_pending } }
+            result = @order.start_paying(payment_method: 'credit_card')
+            expect(@order.state).to eq('paying')
+            expect(result[:redirect]).to eq(:credit_card_pending)
+          end
+        end
+
+        it "should change state to 'failed', record failed_at and failure_reason if payment is failed" do
+          travel_to(time_now) do
+            error_msg = Faker::Lorem.sentence(3)
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :failed, redirect: :credit_card_failed, msg: error_msg} }
+            result = @order.start_paying(payment_method: 'credit_card')
+            expect(@order.state).to eq('failed')
+            expect(@order.failed_at.to_s(:db)).to eq(time_now.to_s(:db))
+            expect(@order.failure_reason).to eq(error_msg)
+            expect(result[:redirect]).to eq(:credit_card_failed)
+          end
+        end
       end
 
       describe "'pay_pig' payment method" do
@@ -216,6 +242,37 @@ RSpec.describe Order, type: :model do
             expect(@order.expired_at.to_s(:db)).to eq(1.day.since.to_s(:db))
           end
         end
+
+        it "should change state to 'paid' and record paid_at if payment is done" do
+          travel_to(time_now) do
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :succ, redirect: :pay_pig_succ } }
+            result = @order.start_paying(payment_method: 'pay_pig')
+            expect(@order.state).to eq('paid')
+            expect(@order.paid_at.to_s(:db)).to eq(time_now.to_s(:db))
+            expect(result[:redirect]).to eq(:pay_pig_succ)
+          end
+        end
+
+        it "should keep state with 'paying' if payment is pending" do
+          travel_to(time_now) do
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :pending, redirect: :pay_pig_pending } }
+            result = @order.start_paying(payment_method: 'pay_pig')
+            expect(@order.state).to eq('paying')
+            expect(result[:redirect]).to eq(:pay_pig_pending)
+          end
+        end
+
+        it "should change state to 'failed', record failed_at and failure_reason if payment is failed" do
+          travel_to(time_now) do
+            error_msg = Faker::Lorem.sentence(3)
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :failed, redirect: :pay_pig_failed, msg: error_msg} }
+            result = @order.start_paying(payment_method: 'pay_pig')
+            expect(@order.state).to eq('failed')
+            expect(@order.failed_at.to_s(:db)).to eq(time_now.to_s(:db))
+            expect(@order.failure_reason).to eq(error_msg)
+            expect(result[:redirect]).to eq(:pay_pig_failed)
+          end
+        end
       end
 
       describe "'atm' payment method" do
@@ -223,6 +280,29 @@ RSpec.describe Order, type: :model do
           travel_to(time_now) do
             @order.start_paying(payment_method: 'atm')
             expect(@order.expired_at.to_s(:db)).to eq(7.days.since.to_s(:db))
+          end
+        end
+
+        it "should keep state with 'paying' if payment is pending" do
+          travel_to(time_now) do
+            atm_account = RandomToken.gen(10, s: :n)
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :pending, redirect: :atm_pending, atm_account: atm_account } }
+            result = @order.start_paying(payment_method: 'atm')
+            expect(@order.state).to eq('paying')
+            expect(result[:redirect]).to eq(:atm_pending)
+            expect(result[:atm_account]).to eq(atm_account)
+          end
+        end
+
+        it "should change state to 'failed', record failed_at and failure_reason if payment is failed" do
+          travel_to(time_now) do
+            error_msg = Faker::Lorem.sentence(3)
+            allow(PaymentMethodService).to receive(:run_paying) { { status: :failed, redirect: :atm_failed, msg: error_msg} }
+            result = @order.start_paying(payment_method: 'atm')
+            expect(@order.state).to eq('failed')
+            expect(@order.failed_at.to_s(:db)).to eq(time_now.to_s(:db))
+            expect(@order.failure_reason).to eq(error_msg)
+            expect(result[:redirect]).to eq(:atm_failed)
           end
         end
       end

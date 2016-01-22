@@ -25,7 +25,7 @@ RSpec.describe PaymentMethodService, type: :model do
 
   describe "#run_paying" do
     it "should call run_paying with given method" do
-      order_number = "20160101#{RandomToken.gen(6, s: :n)}"
+      order_number = RandomToken.gen(14, s: :n)
       total_pay = Faker::Number.number(3).to_i
       method_object_map.each do |key, klass|
         pms = klass.new

@@ -16,12 +16,12 @@ RSpec.describe PaymentMethodService::Atm, type: :model do
     let(:order_number) { RandomToken.gen(14, s: :n) }
     let(:total_pay) { Faker::Number.number(3).to_i }
 
-    it "redirect to success page if AtmService.pay error code == 0" do
+    it "redirect to pending page if AtmService.pay error code == 0" do
       atm_account = RandomToken.gen(10, s: :n)
       allow(AtmService).to receive(:pay) { { error_code: 0, atm_account: atm_account } }
-      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:atm_succ)
+      expect(pms.run_paying(order_number, total_pay)[:redirect]).to eq(:atm_pending)
       expect(pms.run_paying(order_number, total_pay)[:atm_account]).to eq(atm_account)
-      expect(pms.run_paying(order_number, total_pay)[:status]).to eq(:succ)
+      expect(pms.run_paying(order_number, total_pay)[:status]).to eq(:pending)
     end
 
     it "redirect to error page if AtmService.pay error code is not 0" do

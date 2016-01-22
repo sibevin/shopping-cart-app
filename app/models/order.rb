@@ -39,7 +39,7 @@ class Order < ActiveRecord::Base
       calculate_total_price
       self.total_pay = self.total_price - self.total_point
       handle_payment_method(payment_method)
-      setup_expiration
+      run_payment_method_service
     end
   end
 
@@ -70,9 +70,18 @@ class Order < ActiveRecord::Base
     end
   end
 
-  def setup_expiration
+  def run_payment_method_service
     pms = PaymentMethodService.gen(self.payment_method)
     self.expired_at = pms.get_expiration
+    result = PaymentMethodService.run_paying(self.payment_method, self.order_number, self.total_pay)
+    if result[:status] == :succ
+      self.pay
+    elsif result[:status] == :failed
+      self.failure_reason = result[:msg]
+      self.failed_at = Time.now
+      self.state = 'failed'
+    end
+    return result
   end
 
   def gen_order_number
