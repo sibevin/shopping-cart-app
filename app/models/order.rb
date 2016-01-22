@@ -43,6 +43,36 @@ class Order < ActiveRecord::Base
     end
   end
 
+  def add_item(product:, count: 1)
+    if self.state == 'shopping'
+      if oi = self.order_items.where(product: product).take
+        oi.update_attributes(count: oi.count + count)
+      else
+        self.order_items.create(product: product, count: count)
+      end
+    end
+  end
+
+  def change_item(order_item:, count:)
+    if self.state == 'shopping'
+      if oi = self.order_items.where(id: order_item.id).take
+        if count < 1
+          oi.destroy
+        else
+          oi.update_attributes(count: count)
+        end
+      end
+    end
+  end
+
+  def delete_item(order_item:)
+    if self.state == 'shopping'
+      if oi = self.order_items.where(id: order_item.id).take
+        oi.destroy
+      end
+    end
+  end
+
   private
 
   def calculate_total_price

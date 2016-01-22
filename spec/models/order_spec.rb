@@ -307,7 +307,98 @@ RSpec.describe Order, type: :model do
         end
       end
     end
+  end
 
+  describe ".add_item" do
+    let(:order) { create(:order, state: 'shopping') }
+    let(:product) { build_stubbed(:product, unit_price: Faker::Number.number(3).to_i + 1) }
+    let(:item_count) { rand(10) + 1 }
+
+    before(:example) do
+      @existing_item_count = rand(10) + 1
+      create(:order_item, order: order, product: product, count: @existing_item_count)
+    end
+
+    it "should add a new order item if no same product is existing" do
+      new_product = build_stubbed(:product, unit_price: Faker::Number.number(3).to_i + 1)
+      order.add_item(product: new_product, count: item_count)
+      ois = order.order_items.where(product: new_product)
+      expect(ois.size).to eq(1)
+      expect(ois.take.count).to eq(item_count)
+    end
+
+    it "should update count if the given product is existing" do
+      order.add_item(product: product, count: item_count)
+      ois = order.order_items.where(product: product)
+      expect(ois.size).to eq(1)
+      expect(ois.take.count).to eq(item_count + @existing_item_count)
+    end
+
+    it "should do nothing if order state is not shopping" do
+      (Order::STATES - ['shopping']).each do |st|
+        order = create(:order, state: st)
+        order.add_item(product: product, count: item_count)
+        expect(order.order_items.size).to eq(0)
+      end
+    end
+  end
+
+  describe ".change_item" do
+    let(:order) { create(:order, state: 'shopping') }
+    let(:product) { build_stubbed(:product, unit_price: Faker::Number.number(3).to_i + 1) }
+    let(:item_count) { rand(10) + 1 }
+    let(:order_item) { create(:order_item, order: order, product: product, count: item_count) }
+    let(:new_item_count) { item_count + rand(10) + 1 }
+
+    it "should change the existing item count" do
+      order.change_item(order_item: order_item, count: new_item_count)
+      oi = order.order_items.where(id: order_item.id).take
+      expect(oi.count).to eq(new_item_count)
+    end
+
+    it "should remove the given item if the count < 1" do
+      new_item_count = rand(10) - 8
+      order.change_item(order_item: order_item, count: new_item_count)
+      expect(order.order_items.where(id: order_item.id).take).to be_nil
+    end
+
+    it "should do nothing if order state is not shopping" do
+      (Order::STATES - ['shopping']).each do |st|
+        order = create(:order, state: st)
+        order_item = create(:order_item, order: order, product: product, count: item_count)
+        order.change_item(order_item: order_item, count: new_item_count)
+        oi = order.order_items.where(id: order_item.id).take
+        expect(oi.count).to eq(item_count)
+      end
+    end
+
+    it "should do nothing if the given order item is not belong to the order" do
+      wrong_order_item = create(:order_item, order: order, product: product, count: item_count)
+      order.change_item(order_item: wrong_order_item, count: new_item_count)
+      oi = order.order_items.where(id: order_item.id).take
+      expect(oi.count).to eq(item_count)
+    end
+  end
+
+  describe ".delete_item" do
+    let(:order) { create(:order, state: 'shopping') }
+    let(:product) { build_stubbed(:product, unit_price: Faker::Number.number(3).to_i + 1) }
+    let(:item_count) { rand(10) + 1 }
+    let(:order_item) { create(:order_item, order: order, product: product, count: item_count) }
+
+    it "should delete the existing item" do
+      order.delete_item(order_item: order_item)
+      expect(order.order_items.where(id: order_item.id).take).to be_nil
+    end
+
+    it "should do nothing if order state is not shopping" do
+      (Order::STATES - ['shopping']).each do |st|
+        order = create(:order, state: st)
+        order_item = create(:order_item, order: order, product: product, count: item_count)
+        order.delete_item(order_item: order_item)
+        expect(order.order_items.where(id: order_item.id).take).not_to be_nil
+      end
+    end
   end
 
 end
