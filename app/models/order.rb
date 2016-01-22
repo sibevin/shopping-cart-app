@@ -24,9 +24,7 @@ class Order < ActiveRecord::Base
 
   def expire
     if self.state == 'paying' && self.expired_at.present? && self.expired_at <= Time.now
-      self.failure_reason = 'expired'
-      self.failed_at = Time.now
-      self.state = 'failed'
+      handle_failure('expired')
     end
   end
 
@@ -79,6 +77,12 @@ class Order < ActiveRecord::Base
     (self.state == 'shopping')
   end
 
+  def handle_failure(msg)
+    self.failure_reason = msg
+    self.failed_at = Time.now
+    self.state = 'failed'
+  end
+
   def calculate_total_price
     total = 0
     self.order_items.each do |oi|
@@ -111,9 +115,7 @@ class Order < ActiveRecord::Base
     if result[:status] == :succ
       self.pay
     elsif result[:status] == :failed
-      self.failure_reason = result[:msg]
-      self.failed_at = Time.now
-      self.state = 'failed'
+      handle_failure(result[:msg])
     end
     return result
   end
