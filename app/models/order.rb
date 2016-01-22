@@ -8,35 +8,61 @@ class Order < ActiveRecord::Base
   belongs_to :user
   has_many :order_items
 
-  def cancel
-    if is_in_shopping?
-      self.cancelled_at = Time.now
-      self.state = 'cancelled'
-    end
-  end
+  include AASM
+  aasm column: :state, whiny_transitions: false do
+    state :shopping, initial: true
+    state :cancelled
+    state :paying
+    state :paid
+    state :failed
 
-  def pay
-    if self.state == 'paying'
-      self.paid_at = Time.now
-      self.state = 'paid'
+    event :cancel do
+      transitions from: :shopping, to: :cancelled do
+        after do |params|
+          self.cancelled_at = Time.now
+        end
+      end
+    end
+
+    event :pay do
+      transitions from: :paying, to: :paid do
+        after do |params|
+          self.paid_at = Time.now
+        end
+      end
+    end
+
+    event :fail do
+      transitions from: :paying, to: :failed do
+        after do |params|
+          handle_failure(params[:msg])
+        end
+      end
+    end
+
+    event :go_paying do
+      transitions from: :shopping, to: :paying do
+        after do |params|
+          self.paying_at = Time.now
+          self.total_point = params[:total_point]
+          update_order_items
+          calculate_total_price
+          self.total_pay = self.total_price - self.total_point
+          handle_payment_method(params[:payment_method])
+          pms = PaymentMethodService.gen(self.payment_method)
+          self.expired_at = pms.get_expiration
+          run_payment_method_service
+        end
+      end
     end
   end
 
   def expire
-    if self.state == 'paying' && self.expired_at.present? && self.expired_at <= Time.now
-      handle_failure('expired')
-    end
+    self.fail(msg: 'expired') if is_expired?
   end
 
   def start_paying(payment_method:, total_point: 0)
-    if is_in_shopping?
-      self.paying_at = Time.now
-      self.state = 'paying'
-      self.total_point = total_point
-      update_order_items
-      calculate_total_price
-      self.total_pay = self.total_price - self.total_point
-      handle_payment_method(payment_method)
+    if self.go_paying(payment_method: payment_method, total_point: total_point)
       run_payment_method_service
     end
   end
@@ -73,6 +99,10 @@ class Order < ActiveRecord::Base
 
   private
 
+  def is_expired?
+    self.expired_at.present? && self.expired_at <= Time.now
+  end
+
   def is_in_shopping?
     (self.state == 'shopping')
   end
@@ -80,7 +110,6 @@ class Order < ActiveRecord::Base
   def handle_failure(msg)
     self.failure_reason = msg
     self.failed_at = Time.now
-    self.state = 'failed'
   end
 
   def calculate_total_price
@@ -109,13 +138,13 @@ class Order < ActiveRecord::Base
   end
 
   def run_payment_method_service
-    pms = PaymentMethodService.gen(self.payment_method)
-    self.expired_at = pms.get_expiration
     result = PaymentMethodService.run_paying(self.payment_method, self.order_number, self.total_pay)
     if result[:status] == :succ
       self.pay
     elsif result[:status] == :failed
-      handle_failure(result[:msg])
+      self.fail(msg: result[:msg])
+    else
+      self.state = 'paying'
     end
     return result
   end

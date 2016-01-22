@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Order, type: :model do
   let(:time_now) { Time.now.utc }
+  let(:all_states) { Order.aasm.states.map { |st| st.name.to_s } }
 
   describe "when initalization" do
     it "should have a 'shopping' state" do
@@ -33,7 +34,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'shopping'" do
-      (Order::STATES - ['shopping']).each do |st|
+      (all_states - ['shopping']).each do |st|
         order = build(:order, state: st)
         order.cancel
         expect(order.state).to eq(st)
@@ -58,7 +59,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'paying'" do
-      (Order::STATES - ['paying']).each do |st|
+      (all_states - ['paying']).each do |st|
         order = build(:order, state: st)
         order.pay
         expect(order.state).to eq(st)
@@ -88,7 +89,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'paying'" do
-      (Order::STATES - ['paying']).each do |st|
+      (all_states - ['paying']).each do |st|
         order = build(:order, state: st, expired_at: 1.hour.ago)
         order.expire
         expect(order.state).to eq(st)
@@ -116,7 +117,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if the order state is not 'shopping'" do
-      (Order::STATES - ['shopping']).each do |st|
+      (all_states - ['shopping']).each do |st|
         order = build(:order, state: st)
         order.start_paying(payment_method: payment_method)
         expect(order.state).to eq(st)
@@ -335,7 +336,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if order state is not shopping" do
-      (Order::STATES - ['shopping']).each do |st|
+      (all_states - ['shopping']).each do |st|
         order = create(:order, state: st)
         order.add_item(product: product, count: item_count)
         expect(order.order_items.size).to eq(0)
@@ -363,7 +364,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if order state is not shopping" do
-      (Order::STATES - ['shopping']).each do |st|
+      (all_states - ['shopping']).each do |st|
         order = create(:order, state: st)
         order_item = create(:order_item, order: order, product: product, count: item_count)
         order.change_item(order_item: order_item, count: new_item_count)
@@ -392,7 +393,7 @@ RSpec.describe Order, type: :model do
     end
 
     it "should do nothing if order state is not shopping" do
-      (Order::STATES - ['shopping']).each do |st|
+      (all_states - ['shopping']).each do |st|
         order = create(:order, state: st)
         order_item = create(:order_item, order: order, product: product, count: item_count)
         order.delete_item(order_item: order_item)
