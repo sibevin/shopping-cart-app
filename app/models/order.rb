@@ -1,5 +1,4 @@
 class Order < ActiveRecord::Base
-  STATES = ['shopping', 'cancelled', 'paying', 'paid', 'failed']
   PAYMENT_METHODS = ['free', 'credit_card', 'pay_pig', 'atm']
 
   include Uidable
